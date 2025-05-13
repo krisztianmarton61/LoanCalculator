@@ -1,0 +1,181 @@
+@page "/loan-calculator"
+@using BlazorWasmApp.Services
+@using BlazorWasmApp.Components
+@inject LoanCalculationService loanCalculationService
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Loan Calculator</PageTitle>
+
+<div class="container mt-4">
+    <div class="text-center mb-4">
+        <h1>Loan Calculator</h1>
+        <div class="d-inline-block position-relative">
+            <i class="bi bi-info-circle" @onclick="() => showInfoTooltip = !showInfoTooltip"></i>
+            @if (showInfoTooltip)
+            {
+                <div class="tooltip-content">
+                    This calculator helps you understand your loan payments.
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Loan Calculator</h2>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="loanAmount" class="form-label">Loan Amount ($)</label>
+                        <input type="number" class="form-control" id="loanAmount" @bind="loanAmount" min="0" step="1000" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="interestRate" class="form-label">Interest Rate (%)</label>
+                        <input type="number" class="form-control" id="interestRate" @bind="interestRate" min="0" step="0.01" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="loanTerm" class="form-label">Loan Term (Years)</label>
+                        <input type="number" class="form-control" id="loanTerm" @bind="loanTerm" min="1" max="30" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="extraPayment" class="form-label">Additional Monthly Payment ($) (Optional)</label>
+                        <input type="number" class="form-control" id="extraPayment" @bind="extraPayment" min="0" step="100" />
+                        <div class="form-text">Add any extra amount you plan to pay each month to reduce the loan term.</div>
+                    </div>
+                    <div class="d-flex gap-2 justify-content-center">
+                        <button class="btn btn-primary" @onclick="CalculateLoan">Calculate Loan</button>
+                        <button class="btn btn-secondary" @onclick="ResetLoanForm">Reset</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (showResults)
+    {
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h2>Results</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Monthly Payment</th>
+                                        <th>Total Paid</th>
+                                        <th>Months</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>@FormatCurrency(loanResult?.MonthlyPayments?.FirstOrDefault() ?? 0)</td>
+                                        <td>@FormatCurrency(totalPaid)</td>
+                                        <td>@totalMonths</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="mt-4 text-center">
+                            <button class="btn @(showBreakdown ? "btn-primary" : "btn-outline-primary")" 
+                                    @onclick="() => showBreakdown = !showBreakdown">
+                                @(showBreakdown ? "Hide" : "Show") Monthly Payment Breakdown
+                            </button>
+
+                            @if (showBreakdown)
+                            {
+                                if (loanResult?.MonthlyBreakdown != null) {
+                                    <MonthlyBreakdown monthlyData="loanResult.MonthlyBreakdown.Select(m => new MonthlyBreakdown.MonthlyData
+                                    {
+                                        MonthNumber = m.MonthNumber,
+                                        Payment = m.Payment,
+                                        Principal = m.Principal,
+                                        Interest = m.Interest,
+                                        RemainingBalance = m.RemainingBalance,
+                                    }).ToList()" />
+                                }
+                            }
+                        </div>
+
+                        @if (loanResult?.MonthlyPayments != null)
+                        {
+                            <div class="mt-4">
+                                <h3 class="text-center">Payment Schedule</h3>
+                                <div class="chart-container" style="position: relative; height:400px;">
+                                    <canvas id="paymentChart"></canvas>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private bool showInfoTooltip = false;
+    private bool showResults = false;
+    private bool showBreakdown = false;
+
+    // Loan Calculator Fields
+    private decimal loanAmount;
+    private decimal interestRate;
+    private int loanTerm;
+    private decimal extraPayment;
+    private decimal inflationRate;
+
+    // Results
+    private decimal totalPaid;
+    private decimal adjustedForInflation;
+    private int totalMonths;
+    private LoanCalculationService.LoanResult? loanResult;
+
+    private void CalculateLoan()
+    {
+        if (loanAmount <= 0 || interestRate <= 0 || loanTerm <= 0)
+        {
+            return;
+        }
+
+        loanResult = loanCalculationService.CalculateMinimumPayment(loanAmount, interestRate, loanTerm, inflationRate, extraPayment);
+
+        totalPaid = loanResult.TotalPaid;
+        adjustedForInflation = loanResult.AdjustedForInflation;
+        totalMonths = loanResult.Months;
+
+        showResults = true;
+    }
+
+    private void ResetLoanForm()
+    {
+        loanAmount = 0;
+        interestRate = 0;
+        loanTerm = 0;
+        extraPayment = 0;
+        inflationRate = 0;
+        showResults = false;
+        showBreakdown = false;
+    }
+
+    private string FormatCurrency(decimal amount)
+    {
+        return amount.ToString("C2");
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (showResults && loanResult?.MonthlyPayments != null)
+        {
+            var payments = loanResult.MonthlyBreakdown.Select(m => m.Payment).ToList();
+            var interestPayments = loanResult.MonthlyBreakdown.Select(m => m.Interest).ToList();
+            await JSRuntime.InvokeVoidAsync("createPaymentChart", payments, interestPayments, loanAmount);
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
+} 
