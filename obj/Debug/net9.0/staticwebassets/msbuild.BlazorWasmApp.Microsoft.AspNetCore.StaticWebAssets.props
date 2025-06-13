@@ -12,8 +12,8 @@
       <RelatedAsset></RelatedAsset>
       <AssetTraitName>ScopedCss</AssetTraitName>
       <AssetTraitValue>ApplicationBundle</AssetTraitValue>
-      <Fingerprint>sn2kcfttx6</Fingerprint>
-      <Integrity>iH3D2YwEclXZOV76752nemNJFFOkFvHu689VyLgD3uc=</Integrity>
+      <Fingerprint>9gx6sjw3zy</Fingerprint>
+      <Integrity>J4lr+MeF9lyZu37PvSOQoisxdHQt+kvgrpos+eTGMVo=</Integrity>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\BlazorWasmApp.styles.css'))</OriginalItemSpec>
@@ -48,8 +48,8 @@
       <RelatedAsset></RelatedAsset>
       <AssetTraitName></AssetTraitName>
       <AssetTraitValue></AssetTraitValue>
-      <Fingerprint>07vb4jwtp5</Fingerprint>
-      <Integrity>rGIFbyC79mpI9rjgfQrntUWG5cXckrmAXmpEOgh8myI=</Integrity>
+      <Fingerprint>iaip5toysp</Fingerprint>
+      <Integrity>Jh4rrWnaUzvXJM40IphnKtA/094Mueci0MNWMvrjdQY=</Integrity>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\css\loan-calculator.css'))</OriginalItemSpec>
@@ -120,8 +120,8 @@
       <RelatedAsset></RelatedAsset>
       <AssetTraitName></AssetTraitName>
       <AssetTraitValue></AssetTraitValue>
-      <Fingerprint>bx8qn411y4</Fingerprint>
-      <Integrity>UfklRVGs4Pe3agWz3S+PKv3Hy/AN+607TRkQzMtvY5Q=</Integrity>
+      <Fingerprint>fqrcr657rq</Fingerprint>
+      <Integrity>mQWRVXsXLKiwiJ46Bz2YMT+uq+rfUOiT007VT5Mr6to=</Integrity>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\js\loan-chart.js'))</OriginalItemSpec>

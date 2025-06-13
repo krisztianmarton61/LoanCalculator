@@ -1,41 +1,51 @@
-window.createPaymentChart = function (payments, interestPayments, initialAmount) {
-    const ctx = document.getElementById('paymentChart').getContext('2d');
+let paymentChart = null;
+
+window.createPaymentChart = function (payments, interestPayments, loanAmount) {
+    const canvas = document.getElementById('paymentChart');
+    if (!canvas) {
+        console.error('Canvas element not found');
+        return;
+    }
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+        console.error('Could not get 2D context');
+        return;
+    }
     
-    // Create labels for x-axis (months)
+    if (paymentChart) {
+        paymentChart.destroy();
+    }
+
     const labels = Array.from({ length: payments.length }, (_, i) => `Month ${i + 1}`);
     
-    // Calculate cumulative sums
+    const loanPlusInterest = interestPayments.reduce((acc, curr, i) => {
+        acc.push(i === 0 ? loanAmount + curr : acc[i - 1] + curr);
+        return acc;
+    }, []);
+
     const cumulativePayments = payments.reduce((acc, curr, i) => {
         acc.push(i === 0 ? curr : acc[i - 1] + curr);
         return acc;
     }, []);
-
-    // Calculate cumulative interest plus initial amount
-    const cumulativeInterest = interestPayments.reduce((acc, curr, i) => {
-        acc.push(i === 0 ? curr + initialAmount : acc[i - 1] + curr);
-        return acc;
-    }, []);
     
-    // Create the chart
-    new Chart(ctx, {
+    paymentChart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: labels,
             datasets: [
                 {
-                    label: 'Cumulative Amount Paid',
-                    data: cumulativePayments,
-                    borderColor: 'rgb(75, 192, 192)',
-                    backgroundColor: 'rgba(75, 192, 192, 0.1)',
-                    tension: 0.1,
+                    label: 'Loan Amount + Interest',
+                    data: loanPlusInterest,
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
                     fill: true
                 },
                 {
-                    label: 'Total Amount to Pay (Principal + Interest)',
-                    data: cumulativeInterest,
-                    borderColor: 'rgb(255, 99, 132)',
-                    backgroundColor: 'rgba(255, 99, 132, 0.1)',
-                    tension: 0.1,
+                    label: 'Cumulative Payments',
+                    data: cumulativePayments,
+                    borderColor: '#2563eb',
+                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
                     fill: true
                 }
             ]
@@ -46,12 +56,24 @@ window.createPaymentChart = function (payments, interestPayments, initialAmount)
             plugins: {
                 title: {
                     display: true,
-                    text: 'Cumulative Payment Breakdown'
+                    text: 'Loan Progress Over Time'
                 },
                 tooltip: {
                     callbacks: {
                         label: function(context) {
-                            return `${context.dataset.label}: $${context.raw.toFixed(2)}`;
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            if (context.parsed.y !== null) {
+                                label += new Intl.NumberFormat('de-DE', {
+                                    style: 'currency',
+                                    currency: 'EUR',
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2
+                                }).format(context.parsed.y);
+                            }
+                            return label;
                         }
                     }
                 }
@@ -59,23 +81,57 @@ window.createPaymentChart = function (payments, interestPayments, initialAmount)
             scales: {
                 y: {
                     beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: 'Amount ($)'
-                    },
                     ticks: {
                         callback: function(value) {
-                            return '$' + value.toFixed(2);
+                            return new Intl.NumberFormat('de-DE', {
+                                style: 'currency',
+                                currency: 'EUR',
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                            }).format(value);
                         }
-                    }
-                },
-                x: {
-                    title: {
-                        display: true,
-                        text: 'Month'
                     }
                 }
             }
         }
     });
+};
+
+window.exportToExcel = function (data) {
+    const wb = XLSX.utils.book_new();
+    
+    const summaryData = [
+        ['Loan Calculator Summary'],
+        [''],
+        ['Loan Amount', data.loanAmount],
+        ['Interest Rate', data.interestRate],
+        ['Loan Term', data.loanTerm],
+        ['Additional Payment', data.additionalPayment],
+        [''],
+        ['Monthly Payment', data.monthlyPayment],
+        ['Total Interest', data.totalInterest],
+        ['Total Payment', data.totalPayment]
+    ];
+    
+    const summaryWs = XLSX.utils.aoa_to_sheet(summaryData);
+    XLSX.utils.book_append_sheet(wb, summaryWs, 'Summary');
+    
+    const monthlyData = [
+        ['Month', 'Payment', 'Principal', 'Interest', 'Remaining Balance']
+    ];
+    
+    data.monthlyPayments.forEach(payment => {
+        monthlyData.push([
+            payment.Month,
+            payment.Payment,
+            payment.Principal,
+            payment.Interest,
+            payment.RemainingBalance
+        ]);
+    });
+    
+    const monthlyWs = XLSX.utils.aoa_to_sheet(monthlyData);
+    XLSX.utils.book_append_sheet(wb, monthlyWs, 'Monthly Breakdown');
+    
+    XLSX.writeFile(wb, 'loan-calculator.xlsx');
 }; 
